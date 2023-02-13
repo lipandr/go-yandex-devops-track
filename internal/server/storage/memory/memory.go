@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
@@ -13,68 +12,67 @@ import (
 // Repository defines a memory metrics data repository.
 type Repository struct {
 	data model.MetricData
-	sync.RWMutex
 }
 
 // New creates a new memory repository.
 func New() *Repository {
-	var memoryRepo model.MetricData
-	memoryRepo.Data = make(map[string]map[string]interface{})
-	memoryRepo.Data[model.TypeCounter] = make(map[string]interface{})
-	memoryRepo.Data[model.TypeGauge] = make(map[string]interface{})
-	return &Repository{data: memoryRepo}
+	var memory model.MetricData
+	memory.Data = make(map[string]*model.Metric)
+	memory.MU = &sync.RWMutex{}
+	return &Repository{data: memory}
 }
 
 // Get retrieves metric value by name.
-func (r *Repository) Get(_ context.Context, metricType string, name string) (string, error) {
-	r.RLock()
-	defer r.RUnlock()
-	if _, ok := r.data.Data[metricType]; ok {
-		if res, ok := r.data.Data[metricType][name]; ok {
-			return fmt.Sprintf("%v", res), nil
+func (r *Repository) Get(_ context.Context, metric *model.Metric) (string, error) {
+	r.data.MU.RLock()
+	defer r.data.MU.RUnlock()
+
+	if res, ok := r.data.Data[metric.ID]; ok {
+		switch metric.MType {
+		case model.TypeCounter:
+			return fmt.Sprintf("%v", res.Delta), nil
+		case model.TypeGauge:
+			return fmt.Sprintf("%v", res.Value), nil
 		}
 	}
 	return "", storage.ErrNotFound
 }
 
 // Put adds metric metadata for a given name.
-func (r *Repository) Put(_ context.Context, metricType string, name string, value string) error {
-	r.Lock()
-	defer r.Unlock()
-
-	var val interface{}
-	switch metricType {
-	case model.TypeGauge:
-		fl, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err
+func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
+	r.data.MU.Lock()
+	defer r.data.MU.Unlock()
+	if metric.MType == model.TypeCounter {
+		if _, ok := r.data.Data[metric.ID]; !ok {
+			r.data.Data[metric.ID] = &model.Metric{
+				ID:    metric.ID,
+				MType: model.TypeCounter,
+				Delta: metric.Delta,
+			}
+			return nil
 		}
-		val = fl
-
-	case model.TypeCounter:
-		in, err := strconv.Atoi(value)
-		if err != nil {
-			return err
-		}
-		val = in
+		r.data.Data[metric.ID].Delta += metric.Delta
+		return nil
 	}
-	r.data.Data[metricType][name] = val
+	r.data.Data[metric.ID] = metric
 	return nil
 }
 
+// GetAll retrieves all metrics.
 func (r *Repository) GetAll(_ context.Context) []model.Metric {
-	r.RLock()
-	defer r.RUnlock()
+	r.data.MU.RLock()
+	defer r.data.MU.RUnlock()
 
 	var data []model.Metric
 	for _, v := range r.data.Data {
-		for nk, nv := range v {
-			tmp := model.Metric{
-				Name:  nk,
-				Value: nv,
-			}
-			data = append(data, tmp)
+		tmp := model.Metric{
+			ID:    v.ID,
+			Value: v.Value,
 		}
+		if v.MType == model.TypeCounter {
+			tmp.Value = float64(v.Delta)
+		}
+		data = append(data, tmp)
 	}
 	return data
 }
