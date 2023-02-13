@@ -19,11 +19,6 @@ type Repository struct {
 func New() *Repository {
 	var memory model.MetricData
 	memory.Data = make(map[string]*model.Metric)
-	memory.Data["PollCount"] = &model.Metric{
-		ID:    "PollCount",
-		MType: model.TypeCounter,
-		Delta: 0,
-	}
 	return &Repository{data: memory}
 }
 
@@ -48,8 +43,15 @@ func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
 	r.Lock()
 	defer r.Unlock()
 	if metric.ID == "PollCount" {
-		cur := r.data.Data[metric.ID].Delta
-		r.data.Data[metric.ID].Delta = cur + metric.Delta
+		if _, ok := r.data.Data["PollCount"]; !ok {
+			r.data.Data["PollCount"] = &model.Metric{
+				ID:    "PollCount",
+				MType: model.TypeCounter,
+				Delta: metric.Delta,
+			}
+			return nil
+		}
+		r.data.Data[metric.ID].Delta = r.data.Data[metric.ID].Delta + metric.Delta
 		return nil
 	}
 
