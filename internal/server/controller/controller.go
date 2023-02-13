@@ -11,8 +11,8 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type metricsRepository interface {
-	Get(ctx context.Context, metricType string, name string) (string, error)
-	Put(ctx context.Context, metricType string, name string, value string) error
+	Get(ctx context.Context, metric *model.Metric) (string, error)
+	Put(ctx context.Context, metric *model.Metric) error
 	GetAll(ctx context.Context) []model.Metric
 }
 
@@ -26,16 +26,16 @@ func New(repository metricsRepository) *Controller {
 	}
 }
 
-func (c *Controller) Get(ctx context.Context, metricType string, name string) (string, error) {
-	res, err := c.repo.Get(ctx, metricType, name)
+func (c *Controller) Get(ctx context.Context, metric *model.Metric) (string, error) {
+	res, err := c.repo.Get(ctx, metric)
 	if err != nil && errors.Is(err, storage.ErrNotFound) {
 		return "", ErrNotFound
 	}
 	return res, nil
 }
 
-func (c *Controller) Put(ctx context.Context, metricType string, name string, value string) error {
-	return c.repo.Put(ctx, name, metricType, value)
+func (c *Controller) Put(ctx context.Context, metric *model.Metric) error {
+	return c.repo.Put(ctx, metric)
 }
 
 func (c *Controller) GetAll(ctx context.Context) []model.Metric {

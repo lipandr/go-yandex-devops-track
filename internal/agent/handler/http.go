@@ -34,7 +34,7 @@ func (h *Handler) Run(_ context.Context) {
 			defer wg.Done()
 
 			_, err := h.client.R().
-				SetHeader("Content-Type", "text/plain").Post(url)
+				SetHeader("Content-MType", "text/plain").Post(url)
 			if err != nil {
 				return
 			}
