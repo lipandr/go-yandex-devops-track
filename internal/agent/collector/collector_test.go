@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
@@ -12,13 +11,11 @@ const metricCount = 29
 func TestCollector_ShareMetrics(t *testing.T) {
 	type fields struct {
 		collector *model.MetricData
-		RWMutex   sync.RWMutex
 	}
 	col := fields{
 		collector: &model.MetricData{
 			Data: make(map[string]*model.Metric),
 		},
-		RWMutex: sync.RWMutex{},
 	}
 	col.collector.Data["PollCount"] = &model.Metric{
 		ID:    "PollCount",
@@ -41,7 +38,6 @@ func TestCollector_ShareMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Collector{
 				collector: tt.fields.collector,
-				RWMutex:   tt.fields.RWMutex,
 			}
 
 			c.UpdateMetrics()

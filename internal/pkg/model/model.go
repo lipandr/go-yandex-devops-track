@@ -32,5 +32,5 @@ type Metric struct {
 // key is the "ID" of metric
 type MetricData struct {
 	Data map[string]*Metric `json:"data"`
-	MU   sync.RWMutex       `json:"-"`
+	MU   *sync.RWMutex      `json:"-"`
 }

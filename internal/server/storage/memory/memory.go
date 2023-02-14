@@ -12,20 +12,20 @@ import (
 // Repository defines a memory metrics data repository.
 type Repository struct {
 	data model.MetricData
-	sync.RWMutex
 }
 
 // New creates a new memory repository.
 func New() *Repository {
 	var memory model.MetricData
 	memory.Data = make(map[string]*model.Metric)
+	memory.MU = &sync.RWMutex{}
 	return &Repository{data: memory}
 }
 
 // Get retrieves metric value by name.
 func (r *Repository) Get(_ context.Context, metric *model.Metric) (string, error) {
-	r.RLock()
-	defer r.RUnlock()
+	r.data.MU.RLock()
+	defer r.data.MU.RUnlock()
 
 	if res, ok := r.data.Data[metric.ID]; ok {
 		switch metric.MType {
@@ -40,8 +40,8 @@ func (r *Repository) Get(_ context.Context, metric *model.Metric) (string, error
 
 // Put adds metric metadata for a given name.
 func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
-	r.Lock()
-	defer r.Unlock()
+	r.data.MU.Lock()
+	defer r.data.MU.Unlock()
 	if metric.ID == "PollCount" {
 		if _, ok := r.data.Data["PollCount"]; !ok {
 			r.data.Data["PollCount"] = &model.Metric{
@@ -61,8 +61,8 @@ func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
 
 // GetAll retrieves all metrics.
 func (r *Repository) GetAll(_ context.Context) []model.Metric {
-	r.RLock()
-	defer r.RUnlock()
+	r.data.MU.RLock()
+	defer r.data.MU.RUnlock()
 
 	var data []model.Metric
 	for _, v := range r.data.Data {

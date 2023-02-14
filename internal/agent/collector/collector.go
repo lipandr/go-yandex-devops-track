@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"runtime"
+	"sync"
 	"sync/atomic"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
@@ -21,6 +22,7 @@ func New() *Collector {
 		MType: model.TypeCounter,
 		Delta: 0,
 	}
+	collector.MU = &sync.RWMutex{}
 	return &Collector{collector: &collector}
 }
 
