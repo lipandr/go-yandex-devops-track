@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"runtime"
-	"sync"
 	"sync/atomic"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
@@ -12,7 +11,6 @@ import (
 
 type Collector struct {
 	collector *model.MetricData
-	sync.RWMutex
 }
 
 func New() *Collector {
@@ -27,11 +25,12 @@ func New() *Collector {
 }
 
 func (c *Collector) UpdateMetrics() {
+	c.collector.MU.Lock()
+	defer c.collector.MU.Unlock()
+
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
 
-	c.Lock()
-	defer c.Unlock()
 	counter := c.collector.Data["PollCount"].Delta
 	atomic.AddInt64(&counter, 1)
 	c.collector.Data["PollCount"] = &model.Metric{
@@ -181,8 +180,8 @@ func (c *Collector) UpdateMetrics() {
 	}
 }
 func (c *Collector) ShareMetrics() []string {
-	c.RLock()
-	defer c.RUnlock()
+	c.collector.MU.RLock()
+	defer c.collector.MU.RUnlock()
 
 	var data []string
 	for _, v := range c.collector.Data {
@@ -194,5 +193,4 @@ func (c *Collector) ShareMetrics() []string {
 		data = append(data, url)
 	}
 	return data
-
 }

@@ -1,5 +1,7 @@
 package model
 
+import "sync"
+
 type MetricType string
 
 const (
@@ -30,4 +32,5 @@ type Metric struct {
 // key is the "ID" of metric
 type MetricData struct {
 	Data map[string]*Metric `json:"data"`
+	MU   sync.RWMutex       `json:"-"`
 }
