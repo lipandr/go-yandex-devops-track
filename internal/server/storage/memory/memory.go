@@ -51,7 +51,7 @@ func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
 			}
 			return nil
 		}
-		r.data.Data[metric.ID].Delta = r.data.Data[metric.ID].Delta + metric.Delta
+		r.data.Data[metric.ID].Delta += metric.Delta
 		return nil
 	}
 
