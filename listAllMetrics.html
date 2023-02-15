@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru-RU">
+<head>
+    <meta name="viewport" content="width=device-width"/>
+    <title>Metric Collector</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-2">
+<div class="text-center p-2">
+    <h2>The list of current metric values</h2>
+    <table class="table table-bordered table-striped table-sm">
+        <thead>
+        <tr><th>Metric name</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+        {{ range . }}
+        <tr>
+            <td>{{ .ID }}</td>
+            <td>{{ .Value }}</td>
+        </tr>
+        {{ end }}
+        </tbody>
+    </table>
+    <a class="btn btn-primary" href="/">
+        Refresh
+    </a>
+</div>
+</body>
+</html>
