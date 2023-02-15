@@ -6,6 +6,7 @@ import (
 	"errors"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -35,6 +36,12 @@ func New(ctx context.Context, controller *controller.Controller) *Handler {
 }
 
 func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
 	path := r.URL.Path
 	trim := strings.TrimPrefix(path, "/update/")
 	v := strings.Split(trim, "/")
@@ -55,21 +62,24 @@ func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
 }
 
 func (h *Handler) PutMetricJSON(w http.ResponseWriter, r *http.Request) {
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
+	w.Header().Set("Content-Type", "application/json")
+
 	var v *model.MetricJSON
 
-	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	buf := io.NopCloser(r.Body)
+	if err := json.NewDecoder(buf).Decode(&v); err != nil {
+		log.Print(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	req, err := convertFromJSON(v)
+	req, err := convertFromJSON(*v)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -78,14 +88,15 @@ func (h *Handler) PutMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
 }
 
 func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	path := r.URL.Path
 	trim := strings.TrimPrefix(path, "/value/")
 	v := strings.Split(trim, "/")
@@ -101,16 +112,17 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	_, _ = w.Write([]byte(val))
+}
+func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(r.Body)
-}
-func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
-	var v *model.MetricJSON
+	w.Header().Set("Content-Type", "application/json")
+
+	var v model.MetricJSON
 	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	req := model.Metric{
@@ -122,14 +134,22 @@ func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	switch v.MType {
+	case model.TypeGauge:
+		tmp, _ := strconv.ParseFloat(val, 64)
+		v.Value = &tmp
+	case model.TypeCounter:
+		tmp, _ := strconv.ParseInt(val, 10, 64)
+		v.Delta = &tmp
+	}
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(val))
-
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
+	err = json.NewEncoder(w).Encode(v)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
+
 func (h *Handler) ListAllMetrics(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("listAllMetrics.html")
 	if err != nil {
@@ -169,7 +189,7 @@ func getMetric(mType string, id string, value string) (*model.Metric, error) {
 	}
 	return &res, nil
 }
-func convertFromJSON(data *model.MetricJSON) (*model.Metric, error) {
+func convertFromJSON(data model.MetricJSON) (*model.Metric, error) {
 	if data.Delta != nil {
 		return getMetric(string(data.MType), data.ID, strconv.Itoa(int(*data.Delta)))
 	}

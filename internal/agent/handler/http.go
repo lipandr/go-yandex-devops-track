@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
-	"log"
 	"sync"
 
 	"github.com/go-resty/resty/v2"
@@ -35,19 +35,26 @@ func (h *Handler) Run(_ context.Context) {
 		wg.Add(1)
 		go func(data model.MetricJSON) {
 			defer wg.Done()
-			b, err := json.Marshal(data)
-			if err != nil {
-				return
-			}
-			_, err = h.client.R().
-				SetHeader("Content-Type", "application/json; charset=utf-8").
-				SetBody(b).
-				Post("http://localhost:8080/update")
-			if err != nil {
-				log.Printf("error: %v\n", err)
-				return
-			}
 
+			var buf bytes.Buffer
+
+			jsonEncoder := json.NewEncoder(&buf)
+			err := jsonEncoder.Encode(data)
+			if err != nil {
+				return
+			}
+			//b, err := json.Marshal(data)
+			//if err != nil {
+			//	return
+			//}
+			_, err = h.client.R().
+				SetHeader("Content-Type", "application/json").
+				SetBody(buf.Bytes()).
+				Post("http://localhost:8080/update/")
+			if err != nil {
+				//log.Printf("error: %v\n", err)
+				return
+			}
 		}(d)
 	}
 }
