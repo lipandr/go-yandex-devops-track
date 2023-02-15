@@ -42,10 +42,10 @@ func (r *Repository) Get(_ context.Context, metric *model.Metric) (string, error
 func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
 	r.data.MU.Lock()
 	defer r.data.MU.Unlock()
-	if metric.ID == "PollCount" {
-		if _, ok := r.data.Data["PollCount"]; !ok {
-			r.data.Data["PollCount"] = &model.Metric{
-				ID:    "PollCount",
+	if metric.MType == model.TypeCounter {
+		if _, ok := r.data.Data[metric.ID]; !ok {
+			r.data.Data[metric.ID] = &model.Metric{
+				ID:    metric.ID,
 				MType: model.TypeCounter,
 				Delta: metric.Delta,
 			}
@@ -54,7 +54,6 @@ func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
 		r.data.Data[metric.ID].Delta += metric.Delta
 		return nil
 	}
-
 	r.data.Data[metric.ID] = metric
 	return nil
 }

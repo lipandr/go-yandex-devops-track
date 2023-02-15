@@ -36,7 +36,7 @@ func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
 	trim := strings.TrimPrefix(path, "/update/")
 	v := strings.Split(trim, "/")
 	if !checkType(v[0]) {
-		http.Error(w, errors.New("unknown type").Error(), http.StatusNotImplemented)
+		http.Error(w, errors.New("not implemented").Error(), http.StatusNotImplemented)
 		return
 	}
 	if len(v) < 3 {
@@ -45,13 +45,14 @@ func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := getMetric(v[0], v[1], v[2])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, errors.New("bad request").Error(), http.StatusBadRequest)
 		return
 	}
 	if err := h.ctl.Put(h.ctx, req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
@@ -63,7 +64,7 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 	trim := strings.TrimPrefix(path, "/value/")
 	v := strings.Split(trim, "/")
 	if len(v) != 2 {
-		http.Error(w, errors.New("not found").Error(), http.StatusBadRequest)
+		http.Error(w, errors.New("bad request").Error(), http.StatusBadRequest)
 		return
 	}
 	req, _ := getMetric(v[0], v[1], "")
@@ -74,6 +75,7 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	_, _ = w.Write([]byte(val))
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
