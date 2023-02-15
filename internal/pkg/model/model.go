@@ -28,6 +28,14 @@ type Metric struct {
 	Value float64    `json:"value,omitempty"`
 }
 
+// MetricJSON defines the metrics data to collect in JSON format.
+type MetricJSON struct {
+	ID    string     `json:"id"`
+	MType MetricType `json:"type"`
+	Delta *int64     `json:"delta,omitempty"`
+	Value *float64   `json:"value,omitempty"`
+}
+
 // MetricData defines the metrics repository.
 // key is the "ID" of metric
 type MetricData struct {

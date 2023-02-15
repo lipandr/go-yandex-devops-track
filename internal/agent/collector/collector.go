@@ -196,3 +196,28 @@ func (c *Collector) ShareMetrics() []string {
 	}
 	return data
 }
+
+func (c *Collector) ShareMetricsJSON() []model.MetricJSON {
+	c.collector.MU.RLock()
+	defer c.collector.MU.RUnlock()
+
+	var data []model.MetricJSON
+
+	for _, v := range c.collector.Data {
+		switch v.MType {
+		case model.TypeGauge:
+			data = append(data, model.MetricJSON{
+				ID:    v.ID,
+				MType: v.MType,
+				Value: &v.Value,
+			})
+		case model.TypeCounter:
+			data = append(data, model.MetricJSON{
+				ID:    v.ID,
+				MType: v.MType,
+				Delta: &v.Delta,
+			})
+		}
+	}
+	return data
+}

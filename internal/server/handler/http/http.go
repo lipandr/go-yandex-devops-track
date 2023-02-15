@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"html/template"
 	"io"
@@ -15,8 +16,10 @@ import (
 
 type MetHandle interface {
 	PutMetric(w http.ResponseWriter, r *http.Request)
+	PutMetricJSON(w http.ResponseWriter, r *http.Request)
 	GetMetricValue(w http.ResponseWriter, r *http.Request)
 	ListAllMetrics(w http.ResponseWriter, r *http.Request)
+	GetMetricValueJSON(w http.ResponseWriter, r *http.Request)
 }
 
 type Handler struct {
@@ -59,6 +62,29 @@ func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
 	}(r.Body)
 }
 
+func (h *Handler) PutMetricJSON(w http.ResponseWriter, r *http.Request) {
+	var v *model.MetricJSON
+
+	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	req, err := convertFromJSON(v)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := h.ctl.Put(h.ctx, req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
+}
+
 func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	trim := strings.TrimPrefix(path, "/value/")
@@ -81,7 +107,29 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 		_ = Body.Close()
 	}(r.Body)
 }
+func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
+	var v *model.MetricJSON
+	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	req := model.Metric{
+		ID:    v.ID,
+		MType: v.MType,
+	}
+	val, err := h.ctl.Get(h.ctx, &req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(val))
 
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
+}
 func (h *Handler) ListAllMetrics(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("listAllMetrics.html")
 	if err != nil {
@@ -120,6 +168,15 @@ func getMetric(mType string, id string, value string) (*model.Metric, error) {
 		}
 	}
 	return &res, nil
+}
+func convertFromJSON(data *model.MetricJSON) (*model.Metric, error) {
+	if data.Delta != nil {
+		return getMetric(string(data.MType), data.ID, strconv.Itoa(int(*data.Delta)))
+	}
+	if data.Value != nil {
+		return getMetric(string(data.MType), data.ID, strconv.FormatFloat(*data.Value, 'f', -1, 64))
+	}
+	return nil, errors.New("bad request")
 }
 
 func checkType(mType string) bool {

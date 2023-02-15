@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
 	"time"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/collector"
@@ -34,4 +35,7 @@ func (c *Controller) CollectData() {
 }
 func (c *Controller) ReportData() []string {
 	return c.collector.ShareMetrics()
+}
+func (c *Controller) ReportJSON() []model.MetricJSON {
+	return c.collector.ShareMetricsJSON()
 }

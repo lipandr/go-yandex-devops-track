@@ -2,6 +2,9 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
+	"log"
 	"sync"
 
 	"github.com/go-resty/resty/v2"
@@ -26,19 +29,25 @@ func New(controller *controller.Controller) *Handler {
 func (h *Handler) Run(_ context.Context) {
 	var wg sync.WaitGroup
 
-	urls := h.controller.ReportData()
+	data := h.controller.ReportJSON()
 
-	for _, u := range urls {
+	for _, d := range data {
 		wg.Add(1)
-		go func(url string) {
+		go func(data model.MetricJSON) {
 			defer wg.Done()
-
-			_, err := h.client.R().
-				SetHeader("Content-MType", "text/plain").Post(url)
+			b, err := json.Marshal(data)
 			if err != nil {
 				return
 			}
+			_, err = h.client.R().
+				SetHeader("Content-Type", "application/json; charset=utf-8").
+				SetBody(b).
+				Post("http://localhost:8080/update")
+			if err != nil {
+				log.Printf("error: %v\n", err)
+				return
+			}
 
-		}(u)
+		}(d)
 	}
 }

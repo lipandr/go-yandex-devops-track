@@ -34,7 +34,10 @@ func service(h *httpHandler.Handler) http.Handler {
 	r := chi.NewRouter()
 	//r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
+
 	r.Get("/value/*", h.GetMetricValue)
+	r.Post("/value", h.GetMetricValueJSON)
+	r.Post("/update", h.PutMetricJSON)
 	r.Post("/update/*", h.PutMetric)
 	r.Get("/", h.ListAllMetrics)
 
