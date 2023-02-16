@@ -151,7 +151,7 @@ func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListAllMetrics(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("listAllMetrics.html")
+	tmpl, err := template.ParseFiles("web/listAll.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

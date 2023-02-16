@@ -4,25 +4,30 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
+	"fmt"
 	"sync"
 
 	"github.com/go-resty/resty/v2"
 
+	"github.com/lipandr/go-yandex-devops-track/internal/agent/config"
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/controller"
+	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
 )
 
+// Handler is a struct that contains the data of the handler
 type Handler struct {
 	controller *controller.Controller
-
-	client *resty.Client
+	client     *resty.Client
+	config     *config.Config
 }
 
-func New(controller *controller.Controller) *Handler {
+// New returns a new handler.
+func New(controller *controller.Controller, cfg *config.Config) *Handler {
 	client := resty.New()
 	return &Handler{
 		controller: controller,
 		client:     client,
+		config:     cfg,
 	}
 }
 
@@ -47,14 +52,17 @@ func (h *Handler) Run(_ context.Context) {
 			//if err != nil {
 			//	return
 			//}
-			_, err = h.client.R().
+			resp, err := h.client.R().
 				SetHeader("Content-Type", "application/json").
 				SetBody(buf.Bytes()).
-				Post("http://localhost:8080/update/")
+				Post(fmt.Sprintf("http://%s/update/", h.config.Address))
 			if err != nil {
 				//log.Printf("error: %v\n", err)
 				return
 			}
+			defer func() {
+				_ = resp.RawBody().Close()
+			}()
 		}(d)
 	}
 }
