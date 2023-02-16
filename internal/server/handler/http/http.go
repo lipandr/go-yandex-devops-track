@@ -66,9 +66,7 @@ func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PutMetricJSON(w http.ResponseWriter, r *http.Request) {
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
+	defer r.Body.Close()
 	w.Header().Set("Content-Type", "application/json")
 
 	var v *model.MetricJSON
@@ -115,9 +113,7 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(val))
 }
 func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
+	defer r.Body.Close()
 	w.Header().Set("Content-Type", "application/json")
 
 	var v model.MetricJSON
