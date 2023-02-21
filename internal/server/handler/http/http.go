@@ -16,11 +16,11 @@ import (
 )
 
 type MetHandle interface {
-	PutMetric(w http.ResponseWriter, r *http.Request)
-	PutMetricJSON(w http.ResponseWriter, r *http.Request)
-	GetMetricValue(w http.ResponseWriter, r *http.Request)
-	ListAllMetrics(w http.ResponseWriter, r *http.Request)
-	GetMetricValueJSON(w http.ResponseWriter, r *http.Request)
+	Update(w http.ResponseWriter, r *http.Request)
+	UpdateJSON(w http.ResponseWriter, r *http.Request)
+	GetValue(w http.ResponseWriter, r *http.Request)
+	GetValueJSON(w http.ResponseWriter, r *http.Request)
+	UIListAll(w http.ResponseWriter, r *http.Request)
 }
 
 type Handler struct {
@@ -35,7 +35,7 @@ func New(ctx context.Context, controller *controller.Controller) *Handler {
 	}
 }
 
-func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(r.Body)
@@ -53,43 +53,45 @@ func (h *Handler) PutMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errors.New("not found").Error(), http.StatusNotFound)
 		return
 	}
-	req, err := getMetric(v[0], v[1], v[2])
+	name := v[1]
+	data, err := getData(v[0], v[2])
 	if err != nil {
 		http.Error(w, errors.New("bad request").Error(), http.StatusBadRequest)
 		return
 	}
-	if err := h.ctl.Put(h.ctx, req); err != nil {
+	if err := h.ctl.Put(h.ctx, name, data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) PutMetricJSON(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+func (h *Handler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
 	w.Header().Set("Content-Type", "application/json")
 
-	var v *model.MetricJSON
+	var req *model.MetricJSON
 
-	buf := io.NopCloser(r.Body)
-	if err := json.NewDecoder(buf).Decode(&v); err != nil {
-		log.Print(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	req, err := convertFromJSON(*v)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := h.ctl.Put(h.ctx, req); err != nil {
+	log.Printf("%+v\n", req)
+
+	name, data := h.ctl.FromJSON(req)
+
+	if err := h.ctl.Put(h.ctx, name, data); err != nil {
+		log.Printf("save metric %s: %v", name, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetValue(w http.ResponseWriter, r *http.Request) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(r.Body)
@@ -102,9 +104,8 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errors.New("bad request").Error(), http.StatusBadRequest)
 		return
 	}
-	req, _ := getMetric(v[0], v[1], "")
-
-	val, err := h.ctl.Get(h.ctx, req)
+	name := v[1]
+	val, err := h.ctl.Get(h.ctx, name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -112,8 +113,11 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(val))
 }
-func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+
+func (h *Handler) GetValueJSON(w http.ResponseWriter, r *http.Request) {
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(r.Body)
 	w.Header().Set("Content-Type", "application/json")
 
 	var v model.MetricJSON
@@ -121,11 +125,8 @@ func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	req := model.Metric{
-		ID:    v.ID,
-		MType: v.MType,
-	}
-	val, err := h.ctl.Get(h.ctx, &req)
+	name := v.ID
+	val, err := h.ctl.Get(h.ctx, name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -133,10 +134,12 @@ func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
 	switch v.MType {
 	case model.TypeGauge:
 		tmp, _ := strconv.ParseFloat(val, 64)
+		v.Delta = nil
 		v.Value = &tmp
 	case model.TypeCounter:
 		tmp, _ := strconv.ParseInt(val, 10, 64)
 		v.Delta = &tmp
+		v.Value = nil
 	}
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(v)
@@ -146,7 +149,7 @@ func (h *Handler) GetMetricValueJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) ListAllMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UIListAll(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("web/listAll.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -163,36 +166,25 @@ func (h *Handler) ListAllMetrics(w http.ResponseWriter, r *http.Request) {
 	}(r.Body)
 }
 
-func getMetric(mType string, id string, value string) (*model.Metric, error) {
+func getData(mType string, value string) (*model.Metric, error) {
 	var res model.Metric
+
 	res.MType = model.MetricType(mType)
-	res.ID = id
-	if value != "" {
-		switch mType {
-		case model.TypeGauge:
-			fl, err := strconv.ParseFloat(value, 64)
-			if err != nil {
-				return nil, err
-			}
-			res.Value = fl
-		case model.TypeCounter:
-			in, err := strconv.Atoi(value)
-			if err != nil {
-				return nil, err
-			}
-			res.Delta = int64(in)
+	switch mType {
+	case model.TypeGauge:
+		fl, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return nil, err
 		}
+		res.Value = fl
+	case model.TypeCounter:
+		in, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+		res.Delta = int64(in)
 	}
 	return &res, nil
-}
-func convertFromJSON(data model.MetricJSON) (*model.Metric, error) {
-	if data.Delta != nil {
-		return getMetric(string(data.MType), data.ID, strconv.Itoa(int(*data.Delta)))
-	}
-	if data.Value != nil {
-		return getMetric(string(data.MType), data.ID, strconv.FormatFloat(*data.Value, 'f', -1, 64))
-	}
-	return nil, errors.New("bad request")
 }
 
 func checkType(mType string) bool {

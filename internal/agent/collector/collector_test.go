@@ -20,7 +20,6 @@ func TestCollector_ShareMetrics(t *testing.T) {
 		},
 	}
 	col.collector.Data["PollCount"] = &model.Metric{
-		ID:    "PollCount",
 		MType: model.TypeCounter,
 		Delta: 0,
 	}
@@ -42,15 +41,15 @@ func TestCollector_ShareMetrics(t *testing.T) {
 				collector: tt.fields.collector,
 			}
 
-			c.UpdateMetrics()
+			c.Update()
 			for _, n := range model.MetricNames {
 				if _, ok := c.collector.Data[n]; !ok {
 					t.Errorf("%s: %s not found", tt.name, n)
 				}
 			}
-			got := len(c.ShareMetrics())
+			got := len(c.Share())
 			if got != tt.want {
-				t.Errorf("ShareMetrics() length = %v, want %v", got, tt.want)
+				t.Errorf("Share() length = %v, want %v", got, tt.want)
 			}
 		})
 	}

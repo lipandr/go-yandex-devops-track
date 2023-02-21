@@ -1,10 +1,10 @@
 package controller
 
 import (
+	"github.com/lipandr/go-yandex-devops-track/internal/config"
 	"time"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/collector"
-	"github.com/lipandr/go-yandex-devops-track/internal/agent/config"
 	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
 )
 
@@ -26,7 +26,7 @@ func (c *Controller) CollectData() {
 		for {
 			select {
 			case <-ticker.C:
-				c.collector.UpdateMetrics()
+				c.collector.Update()
 			case <-quit:
 				ticker.Stop()
 				return
@@ -35,8 +35,8 @@ func (c *Controller) CollectData() {
 	}()
 }
 func (c *Controller) ReportData() []string {
-	return c.collector.ShareMetrics()
+	return c.collector.Share()
 }
 func (c *Controller) ReportJSON() []model.MetricJSON {
-	return c.collector.ShareMetricsJSON()
+	return c.collector.ShareJSON()
 }
