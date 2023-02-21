@@ -6,7 +6,6 @@ import (
 	"errors"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -78,16 +77,13 @@ func (h *Handler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Printf("%+v\n", req)
 
 	name, data := h.ctl.FromJSON(req)
 
 	if err := h.ctl.Put(h.ctx, name, data); err != nil {
-		log.Printf("save metric %s: %v", name, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 

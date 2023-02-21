@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/config"
@@ -17,10 +16,7 @@ import (
 )
 
 func main() {
-	var cfg config.Config
-	if err := env.Parse(&cfg); err != nil {
-		log.Fatal(err)
-	}
+	cfg := config.NewServer()
 	ctx := context.Background()
 	inMemoryRepo := memory.New()
 	ctl := controller.NewMemoryRepo(inMemoryRepo)

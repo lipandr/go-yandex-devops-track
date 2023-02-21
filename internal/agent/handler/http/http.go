@@ -35,6 +35,10 @@ func (h *Handler) Run(_ context.Context) {
 
 	for _, val := range data {
 		buf, err := h.client.JSONMarshal(val)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 		_, err = h.client.R().
 			SetBody(buf).
 			Post(fmt.Sprintf("http://%s/update/", h.config.Address))

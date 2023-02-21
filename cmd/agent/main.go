@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/caarlos0/env/v6"
-
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/collector"
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/controller"
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/handler/http"
@@ -13,10 +11,7 @@ import (
 )
 
 func main() {
-	var cfg config.Config
-	if err := env.Parse(&cfg); err != nil {
-		panic(err)
-	}
+	cfg := config.NewAgent()
 	ctx := context.Background()
 	col := collector.New()
 	ctl := controller.New(col, &cfg)
