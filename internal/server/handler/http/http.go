@@ -35,12 +35,6 @@ func New(ctx context.Context, controller *controller.Controller) *Handler {
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-
 	path := r.URL.Path
 	trim := strings.TrimPrefix(path, "/update/")
 	v := strings.Split(trim, "/")
@@ -62,29 +56,25 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
-	w.Header().Set("Content-Type", "application/json")
-
 	var req *model.MetricJSON
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	name, data := h.ctl.FromJSON(req)
-
 	if err := h.ctl.Put(h.ctx, name, data); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("Value updated"))
 }
 
 func (h *Handler) GetValue(w http.ResponseWriter, r *http.Request) {

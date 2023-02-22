@@ -1,11 +1,12 @@
 package http
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
-
-	"github.com/go-resty/resty/v2"
+	"net/http"
+	"net/url"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/controller"
 	"github.com/lipandr/go-yandex-devops-track/internal/config"
@@ -14,15 +15,13 @@ import (
 // Handler is a struct that contains the data of the handler
 type Handler struct {
 	controller *controller.Controller
-	client     *resty.Client
+	client     *http.Client
 	config     *config.Config
 }
 
 // New returns a new handler.
 func New(controller *controller.Controller, cfg *config.Config) *Handler {
-	client := resty.New().
-		SetHeader("Content-Type", "application/json").
-		EnableTrace()
+	client := &http.Client{}
 	return &Handler{
 		controller: controller,
 		client:     client,
@@ -32,18 +31,34 @@ func New(controller *controller.Controller, cfg *config.Config) *Handler {
 
 func (h *Handler) Run(_ context.Context) {
 	data := h.controller.ReportJSON()
-
+	u := url.URL{
+		Scheme: "http",
+		Host:   h.config.Address,
+		Path:   "/update",
+	}
 	for _, val := range data {
-		buf, err := h.client.JSONMarshal(val)
+
+		jsonBody, err := json.Marshal(val)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		_, err = h.client.R().
-			SetBody(buf).
-			Post(fmt.Sprintf("http://%s/update/", h.config.Address))
+		responseBody := bytes.NewBuffer(jsonBody)
+		request, err := http.NewRequest(http.MethodPost, u.String(), responseBody)
 		if err != nil {
-			log.Printf("failed to send data %v to %s: %v", val, h.config.Address, err)
+			log.Println(err)
+			continue
+		}
+		request.Header.Set("Content-Type", "application/json")
+		response, err := h.client.Do(request)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		//defer response.Body.Close()
+		if response.StatusCode != http.StatusOK {
+			log.Println(response.StatusCode)
+			continue
 		}
 	}
 }
