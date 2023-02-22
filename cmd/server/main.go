@@ -3,14 +3,14 @@ package main
 import (
 	"compress/gzip"
 	"context"
-	"github.com/go-chi/chi/middleware"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 
-	"github.com/lipandr/go-yandex-devops-track/internal/config"
+	"github.com/lipandr/go-yandex-devops-track/internal/server/config"
 	"github.com/lipandr/go-yandex-devops-track/internal/server/controller"
 	httpHandler "github.com/lipandr/go-yandex-devops-track/internal/server/handler/http"
 	"github.com/lipandr/go-yandex-devops-track/internal/server/storage/file"
@@ -32,6 +32,7 @@ func main() {
 		if err = ctl.Read(ctx); err != nil {
 			log.Printf("restore error: %v", err)
 		}
+		log.Printf("restored data from %s", cfg.StoreFile)
 	}
 	h := httpHandler.New(ctx, ctl)
 
@@ -70,7 +71,7 @@ func main() {
 func service(h *httpHandler.Handler) http.Handler {
 	r := chi.NewRouter()
 	//r.Use(middleware.RequestID)
-	//r.Use(middleware.Logger)
+	r.Use(middleware.Logger)
 	r.Use(middleware.NewCompressor(gzip.DefaultCompression).Handler)
 
 	r.Get("/value/*", h.GetValue)

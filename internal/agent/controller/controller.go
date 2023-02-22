@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"github.com/lipandr/go-yandex-devops-track/internal/config"
 	"time"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/collector"
+	"github.com/lipandr/go-yandex-devops-track/internal/agent/config"
 	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
 )
 

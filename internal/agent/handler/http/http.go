@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/lipandr/go-yandex-devops-track/internal/agent/config"
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/controller"
-	"github.com/lipandr/go-yandex-devops-track/internal/config"
 )
 
 // Handler is a struct that contains the data of the handler
@@ -55,10 +55,11 @@ func (h *Handler) Run(_ context.Context) {
 			log.Println(err)
 			continue
 		}
-		defer response.Body.Close()
+
 		if response.StatusCode != http.StatusOK {
 			log.Println(response.StatusCode)
 			continue
 		}
+		_ = response.Body.Close()
 	}
 }
