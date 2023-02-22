@@ -34,7 +34,7 @@ func (h *Handler) Run(_ context.Context) {
 	u := url.URL{
 		Scheme: "http",
 		Host:   h.config.Address,
-		Path:   "/update",
+		Path:   "/update/",
 	}
 	for _, val := range data {
 
@@ -55,7 +55,7 @@ func (h *Handler) Run(_ context.Context) {
 			log.Println(err)
 			continue
 		}
-		//defer response.Body.Close()
+		defer response.Body.Close()
 		if response.StatusCode != http.StatusOK {
 			log.Println(response.StatusCode)
 			continue
