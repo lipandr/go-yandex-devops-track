@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"github.com/caarlos0/env/v6"
+	"log"
 	"time"
 )
 
@@ -20,16 +21,16 @@ type Config struct {
 
 func NewServer() Config {
 	var cfg Config
-
-	if err := env.Parse(&cfg); err != nil {
-		panic(err)
-	}
+	// parse command line flags
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "address of the server")
 	flag.BoolVar(&cfg.Restore, "r", cfg.Restore, "restore the data from the file")
 	flag.DurationVar(&cfg.StoreInterval, "s", cfg.StoreInterval, "interval of writing data to the file")
 	flag.StringVar(&cfg.StoreFile, "f", cfg.StoreFile, "path to the file where the data will be stored")
 	flag.Parse()
-
+	// parse environment variables
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("can't parse environment variables: %v", err)
+	}
 	return cfg
 }
 

@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"log"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -19,14 +20,14 @@ type Config struct {
 
 func NewAgent() Config {
 	var cfg Config
-
-	if err := env.Parse(&cfg); err != nil {
-		panic(err)
-	}
+	// parse command line flags
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "address of the server")
 	flag.DurationVar(&cfg.PollInterval, "p", cfg.PollInterval, "interval of the polling data")
 	flag.DurationVar(&cfg.ReportInterval, "r", cfg.ReportInterval, "interval of the agent reports")
 	flag.Parse()
-
+	// parse environment variables
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("can't parse environment variables: %v", err)
+	}
 	return cfg
 }
