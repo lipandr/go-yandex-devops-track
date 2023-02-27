@@ -64,6 +64,7 @@ func TestFile(t *testing.T) {
 	require.NoError(t, err)
 
 	fr, err := NewFileReader(f.Name())
+	require.NoError(t, err)
 	testRead(t, fr)
 	err = fr.Close()
 	require.NoError(t, err)

@@ -65,7 +65,7 @@ func testGet(t *testing.T, data *Memory) {
 	require.NoError(t, err)
 	require.Equal(t, strconv.FormatFloat(gaugeMetric.Value, 'f', -1, 64), res)
 
-	res, err = data.Get(ctx, "unknown")
+	_, err = data.Get(ctx, "unknown")
 	require.Error(t, storage.ErrNotFound, err)
 	require.Equal(t, storage.ErrNotFound, err)
 }

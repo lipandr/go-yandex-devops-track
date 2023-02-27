@@ -22,17 +22,19 @@ func main() {
 	ctx := context.Background()
 	inMemoryRepo := memory.New()
 	ctl := controller.NewMemoryRepo(inMemoryRepo)
-	// if Read is true, the data will be restored from the file.
+	// if Restore is true, attempt to restore data from the file.
 	if cfg.Restore {
 		r, err := file.NewFileReader(cfg.StoreFile)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("error: %v\ncan't restore data from the file: %v", err, cfg.StoreFile)
+		} else {
+			ctl = controller.NewFileRepo(inMemoryRepo, r)
+			if err = ctl.Read(ctx); err != nil {
+				log.Printf("restore data from file error: %v", err)
+			}
+			log.Printf("restored data from file: %s", cfg.StoreFile)
 		}
-		ctl = controller.NewFileRepo(inMemoryRepo, r)
-		if err = ctl.Read(ctx); err != nil {
-			log.Printf("restore error: %v", err)
-		}
-		log.Printf("restored data from %s", cfg.StoreFile)
+
 	}
 	h := httpHandler.New(ctx, ctl)
 
