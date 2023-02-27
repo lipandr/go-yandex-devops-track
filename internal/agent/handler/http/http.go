@@ -27,11 +27,11 @@ func init() {
 type Handler struct {
 	controller *controller.Controller
 	client     ClientHTTP
-	config     config.Config
+	config     *config.Config
 }
 
 // New returns a new handler.
-func New(controller *controller.Controller, cfg config.Config) *Handler {
+func New(controller *controller.Controller, cfg *config.Config) *Handler {
 	return &Handler{
 		controller: controller,
 		client:     Client,

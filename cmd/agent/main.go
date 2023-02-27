@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/collector"
@@ -12,6 +13,7 @@ import (
 
 func main() {
 	cfg := config.NewAgent()
+	log.Printf("config values: %+v", cfg)
 	ctx := context.Background()
 	col := collector.New()
 	ctl := controller.New(col, cfg)

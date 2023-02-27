@@ -19,6 +19,7 @@ import (
 
 func main() {
 	cfg := config.NewServer()
+	log.Printf("config values: %+v", cfg)
 	ctx := context.Background()
 	inMemoryRepo := memory.New()
 	ctl := controller.NewMemoryRepo(inMemoryRepo)
@@ -44,6 +45,7 @@ func main() {
 	}
 	// Run the server
 	go func() {
+		log.Printf("starting server on %s", cfg.Address)
 		log.Fatal(server.ListenAndServe())
 	}()
 	// trying to save the data to the file at StoreInterval time interval

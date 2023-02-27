@@ -10,10 +10,10 @@ import (
 
 type Controller struct {
 	collector *collector.Collector
-	config    config.Config
+	config    *config.Config
 }
 
-func New(collector *collector.Collector, cfg config.Config) *Controller {
+func New(collector *collector.Collector, cfg *config.Config) *Controller {
 	return &Controller{
 		collector: collector,
 		config:    cfg,

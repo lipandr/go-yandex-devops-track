@@ -18,16 +18,16 @@ type Config struct {
 	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
 }
 
-func NewAgent() Config {
+func NewAgent() *Config {
 	var cfg Config
+	// parse environment variables
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("can't parse environment variables: %v", err)
+	}
 	// parse command line flags
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "address of the server")
 	flag.DurationVar(&cfg.PollInterval, "p", cfg.PollInterval, "interval of the polling data")
 	flag.DurationVar(&cfg.ReportInterval, "r", cfg.ReportInterval, "interval of the agent reports")
 	flag.Parse()
-	// parse environment variables
-	if err := env.Parse(&cfg); err != nil {
-		log.Printf("can't parse environment variables: %v", err)
-	}
-	return cfg
+	return &cfg
 }
