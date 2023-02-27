@@ -39,6 +39,7 @@ func New(controller *controller.Controller, cfg config.Config) *Handler {
 	}
 }
 
+// Run starts the internal agent logic.
 func (h *Handler) Run(_ context.Context) {
 	// Get data from the controller
 	data := h.controller.ReportJSON()
