@@ -39,7 +39,7 @@ func (h *Handler) GetValueJSON(w http.ResponseWriter, r *http.Request) {
 	name := v.ID
 	val, err := h.ctl.Get(h.ctx, name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusOK)
 		return
 	}
 	switch v.MType {
