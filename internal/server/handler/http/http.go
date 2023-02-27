@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"html/template"
 	"io"
@@ -14,7 +13,7 @@ import (
 	"github.com/lipandr/go-yandex-devops-track/internal/server/controller"
 )
 
-type MetHandle interface {
+type ServerHTTP interface {
 	Update(w http.ResponseWriter, r *http.Request)
 	UpdateJSON(w http.ResponseWriter, r *http.Request)
 	GetValue(w http.ResponseWriter, r *http.Request)
@@ -60,23 +59,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
-	var req *model.MetricJSON
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	name, data := h.ctl.FromJSON(req)
-	if err := h.ctl.Put(h.ctx, name, data); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("Value updated"))
-}
-
 func (h *Handler) GetValue(w http.ResponseWriter, r *http.Request) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
@@ -98,41 +80,6 @@ func (h *Handler) GetValue(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(val))
-}
-
-func (h *Handler) GetValueJSON(w http.ResponseWriter, r *http.Request) {
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(r.Body)
-	w.Header().Set("Content-Type", "application/json")
-
-	var v model.MetricJSON
-	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	name := v.ID
-	val, err := h.ctl.Get(h.ctx, name)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-	switch v.MType {
-	case model.TypeGauge:
-		tmp, _ := strconv.ParseFloat(val, 64)
-		v.Delta = nil
-		v.Value = &tmp
-	case model.TypeCounter:
-		tmp, _ := strconv.ParseInt(val, 10, 64)
-		v.Delta = &tmp
-		v.Value = nil
-	}
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(v)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 }
 
 func (h *Handler) UIListAll(w http.ResponseWriter, r *http.Request) {

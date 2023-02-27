@@ -9,7 +9,7 @@ import (
 	"github.com/lipandr/go-yandex-devops-track/internal/server/storage"
 )
 
-// Memory defines a in-memory metrics data repository.
+// Memory defines the in-memory metrics data repository.
 type Memory struct {
 	data model.MetricData
 }
@@ -28,11 +28,15 @@ func (r *Memory) Get(_ context.Context, name string) (string, error) {
 	defer r.data.MU.RUnlock()
 
 	if res, ok := r.data.Data[name]; ok {
+		val := ""
 		switch r.data.Data[name].MType {
 		case model.TypeCounter:
-			return fmt.Sprintf("%v", res.Delta), nil
+			val = fmt.Sprintf("%v", res.Delta)
 		case model.TypeGauge:
-			return fmt.Sprintf("%v", res.Value), nil
+			val = fmt.Sprintf("%v", res.Value)
+		}
+		if len(val) > 0 {
+			return val, nil
 		}
 	}
 	return "", storage.ErrNotFound
@@ -43,18 +47,20 @@ func (r *Memory) Put(_ context.Context, name string, metric *model.Metric) error
 	r.data.MU.Lock()
 	defer r.data.MU.Unlock()
 
-	if metric.MType == model.TypeCounter {
+	switch metric.MType {
+	case model.TypeCounter:
+		// TODO: this code block should be moved somewhere else.
 		if _, ok := r.data.Data[name]; !ok {
 			r.data.Data[name] = &model.Metric{
 				MType: model.TypeCounter,
 				Delta: metric.Delta,
 			}
-			return nil
+		} else {
+			r.data.Data[name].Delta += metric.Delta
 		}
-		r.data.Data[name].Delta += metric.Delta
-		return nil
+	case model.TypeGauge:
+		r.data.Data[name] = metric
 	}
-	r.data.Data[name] = metric
 	return nil
 }
 
@@ -96,6 +102,9 @@ func (r *Memory) GetAllJSON(_ context.Context) []model.MetricJSON {
 		case model.TypeGauge:
 			tmp.Delta = nil
 			tmp.Value = &v.Value
+		default:
+			tmp.Delta = nil
+			tmp.Value = nil
 		}
 		res = append(res, tmp)
 	}

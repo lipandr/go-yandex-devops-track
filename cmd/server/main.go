@@ -42,9 +42,7 @@ func main() {
 	}
 	// Run the server
 	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			log.Fatal(err)
-		}
+		log.Fatal(server.ListenAndServe())
 	}()
 	// trying to save the data to the file at StoreInterval time interval
 	ticker := time.NewTicker(cfg.StoreInterval)

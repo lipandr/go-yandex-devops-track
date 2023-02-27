@@ -39,122 +39,47 @@ func (c *Collector) Update() {
 		MType: model.TypeCounter,
 		Delta: counter,
 	}
-	c.collector.Data["Alloc"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.Alloc),
+	// Create a map of primitive values to avoid creating multiple model.Metric structs
+	values := map[string]float64{
+		"Alloc":         float64(rtm.Alloc),
+		"BuckHashSys":   float64(rtm.BuckHashSys),
+		"Frees":         float64(rtm.Frees),
+		"GCCPUFraction": rtm.GCCPUFraction,
+		"GCSys":         float64(rtm.GCSys),
+		"HeapAlloc":     float64(rtm.HeapAlloc),
+		"HeapIdle":      float64(rtm.HeapIdle),
+		"HeapObjects":   float64(rtm.HeapObjects),
+		"HeapReleased":  float64(rtm.HeapReleased),
+		"HeapSys":       float64(rtm.HeapSys),
+		"LastGC":        float64(rtm.LastGC),
+		"Lookups":       float64(rtm.Lookups),
+		"MCacheInuse":   float64(rtm.MCacheInuse),
+		"MCacheSys":     float64(rtm.MCacheSys),
+		"MSpanInuse":    float64(rtm.MSpanInuse),
+		"MSpanSys":      float64(rtm.MSpanSys),
+		"Mallocs":       float64(rtm.Mallocs),
+		"NextGC":        float64(rtm.NextGC),
+		"NumForcedGC":   float64(rtm.NumForcedGC),
+		"NumGC":         float64(rtm.NumGC),
+		"OtherSys":      float64(rtm.OtherSys),
+		"HeapInuse":     float64(rtm.HeapInuse),
+		"PauseTotalNs":  float64(rtm.PauseTotalNs),
+		"StackInuse":    float64(rtm.StackInuse),
+		"StackSys":      float64(rtm.StackSys),
+		"Sys":           float64(rtm.Sys),
+		"TotalAlloc":    float64(rtm.TotalAlloc),
+		"RandomValue":   rand.Float64(),
 	}
-
-	c.collector.Data["BuckHashSys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.BuckHashSys),
-	}
-	c.collector.Data["Frees"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.Frees),
-	}
-	c.collector.Data["GCCPUFraction"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: rtm.GCCPUFraction,
-	}
-	c.collector.Data["GCSys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.GCSys),
-	}
-	c.collector.Data["HeapAlloc"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.HeapAlloc),
-	}
-	c.collector.Data["HeapIdle"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.HeapIdle),
-	}
-	c.collector.Data["HeapObjects"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.HeapObjects),
-	}
-	c.collector.Data["HeapReleased"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.HeapReleased),
-	}
-	c.collector.Data["HeapSys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.HeapSys),
-	}
-	c.collector.Data["LastGC"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.LastGC),
-	}
-	c.collector.Data["Lookups"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.Lookups),
-	}
-	c.collector.Data["MCacheInuse"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.MCacheInuse),
-	}
-	c.collector.Data["MCacheSys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.MCacheSys),
-	}
-	c.collector.Data["MSpanInuse"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.MSpanInuse),
-	}
-	c.collector.Data["MSpanSys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.MSpanSys),
-	}
-	c.collector.Data["Mallocs"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.Mallocs),
-	}
-	c.collector.Data["NextGC"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.NextGC),
-	}
-	c.collector.Data["NumForcedGC"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.NumForcedGC),
-	}
-	c.collector.Data["NumGC"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.NumGC),
-	}
-	c.collector.Data["OtherSys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.OtherSys),
-	}
-	c.collector.Data["HeapInuse"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.HeapInuse),
-	}
-	c.collector.Data["PauseTotalNs"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.PauseTotalNs),
-	}
-	c.collector.Data["StackInuse"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.StackInuse),
-	}
-	c.collector.Data["StackSys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.StackSys),
-	}
-	c.collector.Data["Sys"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.Sys),
-	}
-	c.collector.Data["TotalAlloc"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: float64(rtm.TotalAlloc),
-	}
-	c.collector.Data["RandomValue"] = &model.Metric{
-		MType: model.TypeGauge,
-		Value: rand.Float64(),
+	// Iterate over values and assign model.Metric
+	for k, v := range values {
+		c.collector.Data[k] = &model.Metric{
+			MType: model.TypeGauge,
+			Value: v,
+		}
 	}
 }
 
-// Share data using a HTTP GET request.
+// Share data using an HTTP GET request.
 // All data provided in the request URL.
 // Deprecated since using JSON method.
 func (c *Collector) Share() []string {

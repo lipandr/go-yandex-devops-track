@@ -18,17 +18,20 @@ type Config struct {
 	Restore       bool          `env:"RESTORE" envDefault:"true"`
 }
 
-func NewServer() *Config {
+func NewServer() Config {
 	var cfg Config
 
+	if err := env.Parse(&cfg); err != nil {
+		panic(err)
+	}
 	flag.StringVar(&cfg.Address, "a", cfg.Address, "address of the server")
 	flag.BoolVar(&cfg.Restore, "r", cfg.Restore, "restore the data from the file")
 	flag.DurationVar(&cfg.StoreInterval, "s", cfg.StoreInterval, "interval of writing data to the file")
 	flag.StringVar(&cfg.StoreFile, "f", cfg.StoreFile, "path to the file where the data will be stored")
 	flag.Parse()
 
-	if err := env.Parse(&cfg); err != nil {
-		panic(err)
-	}
-	return &cfg
+	return cfg
 }
+
+// TODO указатель на конфиг нужен?
+// работает с указателем и без указателя

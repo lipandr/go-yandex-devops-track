@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -73,18 +74,17 @@ func TestHandler_GetValue(t *testing.T) {
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(handler.GetValue)
 			h.ServeHTTP(w, req)
-			if w.Code != tt.want.statusCode {
-				t.Errorf("handler.GetValue() = %v, want %v", w.Code, tt.want.statusCode)
-			}
+
+			require.Equalf(t, tt.want.statusCode, w.Code,
+				"handler.GetValue() = %v, want %v", w.Code, tt.want.statusCode)
 			defer func(Body io.ReadCloser) {
 				_ = Body.Close()
 			}(req.Body)
-			if w.Body.String() != tt.want.response {
-				t.Errorf("handler.GetValue() = %v, want %v", w.Body.String(), tt.want.response)
-			}
-			if w.Header().Get("Content-Type") != tt.want.contentType {
-				t.Errorf("handler.GetValue() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
-			}
+
+			require.Equalf(t, tt.want.response, w.Body.String(),
+				"handler.GetValue() = %v, want %v", w.Body.String(), tt.want.response)
+			require.Equalf(t, tt.want.contentType, w.Header().Get("Content-Type"),
+				"handler.GetValue() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
 		})
 	}
 }
@@ -137,18 +137,16 @@ func TestHandler_Update(t *testing.T) {
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(handler.Update)
 			h.ServeHTTP(w, req)
-			if w.Code != tt.want.statusCode {
-				t.Errorf("handler.Update() = %v, want %v", w.Code, tt.want.statusCode)
-			}
+
+			require.Equalf(t, tt.want.statusCode, w.Code, "handler.Update() = %v, want %v", w.Code, tt.want.statusCode)
 			defer func(Body io.ReadCloser) {
 				_ = Body.Close()
 			}(req.Body)
-			if w.Body.String() != tt.want.response {
-				t.Errorf("handler.Update() = %v, want %v", w.Body.String(), tt.want.response)
-			}
-			if w.Header().Get("Content-Type") != tt.want.contentType {
-				t.Errorf("handler.Update() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
-			}
+
+			require.Equalf(t, tt.want.response, w.Body.String(),
+				"handler.Update() = %v, want %v", w.Body.String(), tt.want.response)
+			require.Equalf(t, tt.want.contentType, w.Header().Get("Content-Type"),
+				"handler.Update() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
 		})
 	}
 }
