@@ -19,7 +19,6 @@ import (
 
 func main() {
 	cfg := config.NewServer()
-	log.Printf("config values: %+v", cfg)
 	ctx := context.Background()
 	inMemoryRepo := memory.New()
 	ctl := controller.NewMemoryRepo(inMemoryRepo)
@@ -27,7 +26,7 @@ func main() {
 	if cfg.Restore {
 		r, err := file.NewFileReader(cfg.StoreFile)
 		if err != nil {
-			log.Printf("error: %v\ncan't restore data from the file: %v", err, cfg.StoreFile)
+			log.Printf("error: %v", err)
 		} else {
 			ctl = controller.NewFileRepo(inMemoryRepo, r)
 			if err = ctl.Read(ctx); err != nil {
@@ -35,7 +34,6 @@ func main() {
 			}
 			log.Printf("restored data from file: %s", cfg.StoreFile)
 		}
-
 	}
 	h := httpHandler.New(ctx, ctl)
 

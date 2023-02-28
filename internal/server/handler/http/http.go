@@ -1,6 +1,7 @@
 package http
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"html/template"
@@ -89,8 +90,21 @@ func (h *Handler) UIListAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := h.ctl.GetAll(h.ctx)
-	err = tmpl.Execute(w, data)
-	if err != nil {
+	// Check client side supports gzip encoding
+	if r.Header.Get("Accept-Encoding") == "gzip" {
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		if err = tmpl.Execute(w, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := gz.Flush(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	if err = tmpl.Execute(w, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

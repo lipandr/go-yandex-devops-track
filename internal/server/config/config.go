@@ -33,6 +33,3 @@ func NewServer() *Config {
 	flag.Parse()
 	return &cfg
 }
-
-// TODO указатель на конфиг нужен?
-// работает с указателем и без указателя
