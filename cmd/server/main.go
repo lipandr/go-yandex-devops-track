@@ -1,7 +1,6 @@
 package main
 
 import (
-	"compress/gzip"
 	"context"
 	"log"
 	"net/http"
@@ -72,7 +71,7 @@ func service(h *httpHandler.Handler) http.Handler {
 	r := chi.NewRouter()
 	//r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
-	r.Use(middleware.NewCompressor(gzip.DefaultCompression).Handler)
+	//r.Use(middleware.NewCompressor(gzip.DefaultCompression).Handler)
 
 	r.Get("/value/*", h.GetValue)
 	r.Post("/value/", h.GetValueJSON)
