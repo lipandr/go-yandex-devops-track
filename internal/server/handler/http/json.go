@@ -28,20 +28,20 @@ func (h *Handler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	res := fmt.Sprintf("Metric %s updated", name)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	//// Check client side supports gzip encoding
-	//if r.Header.Get("Accept-Encoding") == "gzip" {
-	//	w.Header().Set("Content-Encoding", "gzip")
-	//	gz := gzip.NewWriter(w)
-	//	defer gz.Close()
-	//	if _, err := gz.Write([]byte(res)); err != nil {
-	//		http.Error(w, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	if err := gz.Flush(); err != nil {
-	//		http.Error(w, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//}
+	// Check client side supports gzip encoding
+	if r.Header.Get("Accept-Encoding") == "gzip" {
+		w.Header().Set("Content-Encoding", "gzip")
+		//gz := gzip.NewWriter(w)
+		//defer gz.Close()
+		//if _, err := gz.Write([]byte(res)); err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//}
+		//if err := gz.Flush(); err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//}
+	}
 	_, _ = w.Write([]byte(res))
 }
 
@@ -60,7 +60,8 @@ func (h *Handler) GetValueJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	val, err := h.ctl.Get(h.ctx, metric.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		// TODO change to http.StatusNotFound
+		http.Error(w, err.Error(), http.StatusOK)
 		return
 	}
 	switch metric.MType {
@@ -73,18 +74,18 @@ func (h *Handler) GetValueJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	//// Check client side supports for gzip encoding
-	//if r.Header.Get("Accept-Encoding") == "gzip" {
-	//	w.Header().Set("Content-Encoding", "gzip")
-	//	gz := gzip.NewWriter(w)
-	//	defer gz.Close()
-	//	err = json.NewEncoder(gz).Encode(val)
-	//	if err != nil {
-	//		http.Error(w, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	return
-	//}
+	// Check client side supports for gzip encoding
+	if r.Header.Get("Accept-Encoding") == "gzip" {
+		w.Header().Set("Content-Encoding", "gzip")
+		//gz := gzip.NewWriter(w)
+		//defer gz.Close()
+		//err = json.NewEncoder(gz).Encode(val)
+		//if err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//}
+		//return
+	}
 	err = json.NewEncoder(w).Encode(metric)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
