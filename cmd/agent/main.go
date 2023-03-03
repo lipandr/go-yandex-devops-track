@@ -5,21 +5,21 @@ import (
 	"time"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/collector"
+	"github.com/lipandr/go-yandex-devops-track/internal/agent/config"
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/controller"
-	"github.com/lipandr/go-yandex-devops-track/internal/agent/handler"
+	"github.com/lipandr/go-yandex-devops-track/internal/agent/handler/http"
 )
 
-const reportInterval = 10 * time.Second
-
 func main() {
+	cfg := config.NewAgent()
 	ctx := context.Background()
 	col := collector.New()
-	ctl := controller.New(col)
+	ctl := controller.New(col, cfg)
 	ctl.CollectData()
 
-	h := handler.New(ctl)
+	h := http.New(ctl, cfg)
 
-	ticker := time.NewTicker(reportInterval)
+	ticker := time.NewTicker(cfg.ReportInterval)
 	quit := make(chan struct{})
 	for {
 		select {

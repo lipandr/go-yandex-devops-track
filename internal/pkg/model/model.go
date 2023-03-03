@@ -22,15 +22,28 @@ var MetricNames = []string{
 
 // Metric defines the metrics data to collect.
 type Metric struct {
-	ID    string     `json:"id"`
-	MType MetricType `json:"type"`
-	Delta int64      `json:"delta,omitempty"`
-	Value float64    `json:"value,omitempty"`
+	MType MetricType
+	Delta int64
+	Value float64
 }
 
-// MetricData defines the metrics repository.
+// MetricJSON defines the metrics data to collect in JSON format.
+type MetricJSON struct {
+	ID    string     `json:"id"`
+	MType MetricType `json:"type"`
+	Delta *int64     `json:"delta,omitempty"`
+	Value *float64   `json:"value,omitempty"`
+}
+
+// MetricData defines the metrics in memory repository.
 // key is the "ID" of metric
 type MetricData struct {
-	Data map[string]*Metric `json:"data"`
-	MU   *sync.RWMutex      `json:"-"`
+	Data map[string]*Metric
+	MU   *sync.RWMutex
+}
+
+// MetricWeb defines the metric data for web UI.
+type MetricWeb struct {
+	ID    string
+	Value float64
 }

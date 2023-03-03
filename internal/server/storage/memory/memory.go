@@ -9,70 +9,104 @@ import (
 	"github.com/lipandr/go-yandex-devops-track/internal/server/storage"
 )
 
-// Repository defines a memory metrics data repository.
-type Repository struct {
+// Memory defines the in-memory metrics data repository.
+type Memory struct {
 	data model.MetricData
 }
 
 // New creates a new memory repository.
-func New() *Repository {
+func New() *Memory {
 	var memory model.MetricData
 	memory.Data = make(map[string]*model.Metric)
 	memory.MU = &sync.RWMutex{}
-	return &Repository{data: memory}
+	return &Memory{data: memory}
 }
 
 // Get retrieves metric value by name.
-func (r *Repository) Get(_ context.Context, metric *model.Metric) (string, error) {
+func (r *Memory) Get(_ context.Context, name string) (string, error) {
 	r.data.MU.RLock()
 	defer r.data.MU.RUnlock()
 
-	if res, ok := r.data.Data[metric.ID]; ok {
-		switch metric.MType {
+	if res, ok := r.data.Data[name]; ok {
+		val := ""
+		switch r.data.Data[name].MType {
 		case model.TypeCounter:
-			return fmt.Sprintf("%v", res.Delta), nil
+			val = fmt.Sprintf("%v", res.Delta)
 		case model.TypeGauge:
-			return fmt.Sprintf("%v", res.Value), nil
+			val = fmt.Sprintf("%v", res.Value)
+		}
+		if len(val) > 0 {
+			return val, nil
 		}
 	}
 	return "", storage.ErrNotFound
 }
 
 // Put adds metric metadata for a given name.
-func (r *Repository) Put(_ context.Context, metric *model.Metric) error {
+func (r *Memory) Put(_ context.Context, name string, metric *model.Metric) error {
 	r.data.MU.Lock()
 	defer r.data.MU.Unlock()
-	if metric.MType == model.TypeCounter {
-		if _, ok := r.data.Data[metric.ID]; !ok {
-			r.data.Data[metric.ID] = &model.Metric{
-				ID:    metric.ID,
+
+	switch metric.MType {
+	case model.TypeCounter:
+		// TODO: this code block should be moved somewhere else.
+		if _, ok := r.data.Data[name]; !ok {
+			r.data.Data[name] = &model.Metric{
 				MType: model.TypeCounter,
 				Delta: metric.Delta,
 			}
-			return nil
+		} else {
+			r.data.Data[name].Delta += metric.Delta
 		}
-		r.data.Data[metric.ID].Delta += metric.Delta
-		return nil
+	case model.TypeGauge:
+		r.data.Data[name] = metric
 	}
-	r.data.Data[metric.ID] = metric
 	return nil
 }
 
-// GetAll retrieves all metrics.
-func (r *Repository) GetAll(_ context.Context) []model.Metric {
+// GetAll retrieves all metrics for web UI.
+func (r *Memory) GetAll(_ context.Context) []model.MetricWeb {
 	r.data.MU.RLock()
 	defer r.data.MU.RUnlock()
 
-	var data []model.Metric
-	for _, v := range r.data.Data {
-		tmp := model.Metric{
-			ID:    v.ID,
+	var res []model.MetricWeb
+	for k, v := range r.data.Data {
+		tmp := model.MetricWeb{
+			ID:    k,
 			Value: v.Value,
 		}
+		// формируем метрику в формате ID и Value для последующего отображения в браузере
+		// значения типа counter преобразовываем в значение Value float64.
 		if v.MType == model.TypeCounter {
 			tmp.Value = float64(v.Delta)
 		}
-		data = append(data, tmp)
+		res = append(res, tmp)
 	}
-	return data
+	return res
+}
+
+func (r *Memory) GetAllJSON(_ context.Context) []model.MetricJSON {
+	r.data.MU.RLock()
+	defer r.data.MU.RUnlock()
+
+	var res []model.MetricJSON
+	for k, v := range r.data.Data {
+		tmp := model.MetricJSON{
+			ID:    k,
+			MType: v.MType,
+		}
+		switch v.MType {
+		case model.TypeCounter:
+			tmp.Delta = &v.Delta
+			tmp.Value = nil
+		case model.TypeGauge:
+			tmp.Delta = nil
+			tmp.Value = &v.Value
+		default:
+			tmp.Delta = nil
+			tmp.Value = nil
+		}
+		res = append(res, tmp)
+	}
+	return res
 }

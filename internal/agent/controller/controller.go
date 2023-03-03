@@ -4,27 +4,29 @@ import (
 	"time"
 
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/collector"
+	"github.com/lipandr/go-yandex-devops-track/internal/agent/config"
+	"github.com/lipandr/go-yandex-devops-track/internal/pkg/model"
 )
-
-const pollInterval = 2 * time.Second
 
 type Controller struct {
 	collector *collector.Collector
+	config    *config.Config
 }
 
-func New(collector *collector.Collector) *Controller {
+func New(collector *collector.Collector, cfg *config.Config) *Controller {
 	return &Controller{
 		collector: collector,
+		config:    cfg,
 	}
 }
 func (c *Controller) CollectData() {
-	ticker := time.NewTicker(pollInterval)
+	ticker := time.NewTicker(c.config.PollInterval)
 	quit := make(chan struct{})
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				c.collector.UpdateMetrics()
+				c.collector.Update()
 			case <-quit:
 				ticker.Stop()
 				return
@@ -33,5 +35,8 @@ func (c *Controller) CollectData() {
 	}()
 }
 func (c *Controller) ReportData() []string {
-	return c.collector.ShareMetrics()
+	return c.collector.Share()
+}
+func (c *Controller) ReportJSON() []model.MetricJSON {
+	return c.collector.ShareJSON()
 }

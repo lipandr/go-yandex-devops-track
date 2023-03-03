@@ -2,6 +2,8 @@ package http
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,14 +13,13 @@ import (
 	"github.com/lipandr/go-yandex-devops-track/internal/server/storage/memory"
 )
 
-func TestHandler_GetMetricValue(t *testing.T) {
+func TestHandler_GetValue(t *testing.T) {
 	repo := memory.New()
-	_ = repo.Put(context.Background(), &model.Metric{
-		ID:    "test",
+	_ = repo.Put(context.Background(), "test", &model.Metric{
 		MType: model.TypeCounter,
 		Delta: 123,
 	})
-	cnt := controller.New(repo)
+	cnt := controller.NewMemoryRepo(repo)
 	handler := New(context.Background(), cnt)
 	type want struct {
 		request     string
@@ -71,25 +72,26 @@ func TestHandler_GetMetricValue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tt.want.request, nil)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(handler.GetMetricValue)
+			h := http.HandlerFunc(handler.GetValue)
 			h.ServeHTTP(w, req)
-			if w.Code != tt.want.statusCode {
-				t.Errorf("handler.GetMetricValue() = %v, want %v", w.Code, tt.want.statusCode)
-			}
-			defer req.Body.Close()
-			if w.Body.String() != tt.want.response {
-				t.Errorf("handler.GetMetricValue() = %v, want %v", w.Body.String(), tt.want.response)
-			}
-			if w.Header().Get("Content-Type") != tt.want.contentType {
-				t.Errorf("handler.GetMetricValue() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
-			}
+
+			require.Equalf(t, tt.want.statusCode, w.Code,
+				"handler.GetValue() = %v, want %v", w.Code, tt.want.statusCode)
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(req.Body)
+
+			require.Equalf(t, tt.want.response, w.Body.String(),
+				"handler.GetValue() = %v, want %v", w.Body.String(), tt.want.response)
+			require.Equalf(t, tt.want.contentType, w.Header().Get("Content-Type"),
+				"handler.GetValue() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
 		})
 	}
 }
 
-func TestHandler_PutMetric(t *testing.T) {
+func TestHandler_Update(t *testing.T) {
 	repo := memory.New()
-	cnt := controller.New(repo)
+	cnt := controller.NewMemoryRepo(repo)
 	handler := New(context.Background(), cnt)
 	type want struct {
 		request     string
@@ -133,18 +135,18 @@ func TestHandler_PutMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, tt.want.request, nil)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(handler.PutMetric)
+			h := http.HandlerFunc(handler.Update)
 			h.ServeHTTP(w, req)
-			if w.Code != tt.want.statusCode {
-				t.Errorf("handler.PutMetric() = %v, want %v", w.Code, tt.want.statusCode)
-			}
-			defer req.Body.Close()
-			if w.Body.String() != tt.want.response {
-				t.Errorf("handler.PutMetric() = %v, want %v", w.Body.String(), tt.want.response)
-			}
-			if w.Header().Get("Content-Type") != tt.want.contentType {
-				t.Errorf("handler.PutMetric() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
-			}
+
+			require.Equalf(t, tt.want.statusCode, w.Code, "handler.Update() = %v, want %v", w.Code, tt.want.statusCode)
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(req.Body)
+
+			require.Equalf(t, tt.want.response, w.Body.String(),
+				"handler.Update() = %v, want %v", w.Body.String(), tt.want.response)
+			require.Equalf(t, tt.want.contentType, w.Header().Get("Content-Type"),
+				"handler.Update() = %v, want %v", w.Header().Get("Content-Type"), tt.want.contentType)
 		})
 	}
 }
