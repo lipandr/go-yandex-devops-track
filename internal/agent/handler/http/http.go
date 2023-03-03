@@ -4,23 +4,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
-	"net/http"
-	"net/url"
-
+	"fmt"
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/config"
 	"github.com/lipandr/go-yandex-devops-track/internal/agent/controller"
+	"log"
+	"net/http"
 )
 
-// ClientHTTP is interface for http Client
+// ClientHTTP is interface for http client
 type ClientHTTP interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var Client ClientHTTP
+var client ClientHTTP
 
 func init() {
-	Client = &http.Client{}
+	client = &http.Client{}
 }
 
 // Handler is a struct that contains the data of the handler
@@ -34,7 +33,7 @@ type Handler struct {
 func New(controller *controller.Controller, cfg *config.Config) *Handler {
 	return &Handler{
 		controller: controller,
-		client:     Client,
+		client:     client,
 		config:     cfg,
 	}
 }
@@ -43,14 +42,10 @@ func New(controller *controller.Controller, cfg *config.Config) *Handler {
 func (h *Handler) Run(_ context.Context) {
 	// Get data from the controller
 	data := h.controller.ReportJSON()
-	u := url.URL{
-		Scheme: "http",
-		Host:   h.config.Address,
-		Path:   "/update/",
-	}
+	url := fmt.Sprintf("http://%s/update/", h.config.Address)
 	// Make requests to the server
 	for _, val := range data {
-		response, err := Post(u, val)
+		response, err := Post(url, val)
 		if err != nil {
 			log.Printf("error: %v", err)
 			continue
@@ -62,7 +57,7 @@ func (h *Handler) Run(_ context.Context) {
 	}
 }
 
-func Post(url url.URL, body interface{}) (*http.Response, error) {
+func Post(url string, body interface{}) (*http.Response, error) {
 	// Marshal the data as JSON
 	jsonBytes, err := json.Marshal(body)
 	if err != nil {
@@ -71,12 +66,12 @@ func Post(url url.URL, body interface{}) (*http.Response, error) {
 	// Create buffer to send the data
 	responseBody := bytes.NewBuffer(jsonBytes)
 	// New request
-	request, err := http.NewRequest(http.MethodPost, url.String(), responseBody)
+	request, err := http.NewRequest(http.MethodPost, url, responseBody)
 	if err != nil {
 		return nil, err
 	}
 	// Set the content type
 	request.Header.Set("Content-Type", "application/json")
 
-	return Client.Do(request)
+	return client.Do(request)
 }

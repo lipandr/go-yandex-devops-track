@@ -25,27 +25,33 @@ func (h *Handler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	res := fmt.Sprintf("Metric %s updated", name)
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	// Check client side supports gzip encoding
-	if r.Header.Get("Accept-Encoding") == "gzip" {
-		w.Header().Set("Content-Encoding", "gzip")
-		//gz := gzip.NewWriter(w)
-		//defer gz.Close()
-		//if _, err := gz.Write([]byte(res)); err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	return
-		//}
-		//if err := gz.Flush(); err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	return
-		//}
+	metric, err := h.GetJSONMetric(req.ID, req.MType)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-	_, _ = w.Write([]byte(res))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	// Check client side supports for gzip encoding
+	//if r.Header.Get("Accept-Encoding") == "gzip" {
+	//	w.Header().Set("Content-Encoding", "gzip")
+	//	//gz := gzip.NewWriter(w)
+	//	//defer gz.Close()
+	//	//err = json.NewEncoder(gz).Encode(val)
+	//	//if err != nil {
+	//	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	//	return
+	//	//}
+	//	//return
+	//}
+	err = json.NewEncoder(w).Encode(metric)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
-func (h *Handler) GetValueJSON(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetJSON(w http.ResponseWriter, r *http.Request) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(r.Body)
@@ -53,42 +59,55 @@ func (h *Handler) GetValueJSON(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	var metric model.MetricJSON
+	var metric *model.MetricJSON
 	if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	val, err := h.ctl.Get(h.ctx, metric.ID)
+	metric, err := h.GetJSONMetric(metric.ID, metric.MType)
 	if err != nil {
-		// TODO change to http.StatusNotFound
-		http.Error(w, err.Error(), http.StatusOK)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	}
-	switch metric.MType {
-	case model.TypeGauge:
-		tmp, _ := strconv.ParseFloat(val, 64)
-		metric.Value = &tmp
-	case model.TypeCounter:
-		tmp, _ := strconv.ParseInt(val, 10, 64)
-		metric.Delta = &tmp
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	// Check client side supports for gzip encoding
-	if r.Header.Get("Accept-Encoding") == "gzip" {
-		w.Header().Set("Content-Encoding", "gzip")
-		//gz := gzip.NewWriter(w)
-		//defer gz.Close()
-		//err = json.NewEncoder(gz).Encode(val)
-		//if err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	return
-		//}
-		//return
-	}
+	//if r.Header.Get("Accept-Encoding") == "gzip" {
+	//	w.Header().Set("Content-Encoding", "gzip")
+	//	//gz := gzip.NewWriter(w)
+	//	//defer gz.Close()
+	//	//err = json.NewEncoder(gz).Encode(val)
+	//	//if err != nil {
+	//	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	//	return
+	//	//}
+	//	//return
+	//}
 	err = json.NewEncoder(w).Encode(metric)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h *Handler) GetJSONMetric(id string, mType model.MetricType) (*model.MetricJSON, error) {
+	res := model.MetricJSON{
+		ID:    id,
+		MType: mType,
+	}
+	val, err := h.ctl.Get(h.ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	switch mType {
+	case model.TypeGauge:
+		tmp, _ := strconv.ParseFloat(val, 64)
+		res.Value = &tmp
+	case model.TypeCounter:
+		tmp, _ := strconv.ParseInt(val, 10, 64)
+		res.Delta = &tmp
+	default:
+		return nil, fmt.Errorf("metric type %s not supported", mType)
+	}
+	return &res, nil
 }

@@ -75,7 +75,7 @@ func service(h *httpHandler.Handler) http.Handler {
 	r.Use(middleware.NewCompressor(gzip.DefaultCompression).Handler)
 
 	r.Get("/value/*", h.GetValue)
-	r.Post("/value/", h.GetValueJSON)
+	r.Post("/value/", h.GetJSON)
 	r.Post("/update/", h.UpdateJSON)
 	r.Post("/update/*", h.Update)
 	r.Get("/", h.UIListAll)

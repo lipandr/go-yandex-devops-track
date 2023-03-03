@@ -17,7 +17,7 @@ type ServerHTTP interface {
 	Update(w http.ResponseWriter, r *http.Request)
 	UpdateJSON(w http.ResponseWriter, r *http.Request)
 	GetValue(w http.ResponseWriter, r *http.Request)
-	GetValueJSON(w http.ResponseWriter, r *http.Request)
+	GetJSON(w http.ResponseWriter, r *http.Request)
 	UIListAll(w http.ResponseWriter, r *http.Request)
 }
 
