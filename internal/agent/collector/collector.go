@@ -181,18 +181,19 @@ func (c *Collector) UpdateMetrics() {
 		Value: rand.Float64(),
 	}
 }
+
 func (c *Collector) ShareMetrics() []string {
 	c.collector.MU.RLock()
 	defer c.collector.MU.RUnlock()
 
-	var data []string
+	var res []string
 	for _, v := range c.collector.Data {
-		str := fmt.Sprintf("%f", v.Value)
+		data := fmt.Sprintf("%f", v.Value)
 		if v.MType == model.TypeCounter {
-			str = fmt.Sprintf("%d", v.Delta)
+			data = fmt.Sprintf("%d", v.Delta)
 		}
-		url := fmt.Sprintf("http://127.0.0.1:8080/update/%v/%v/%v", v.MType, v.ID, str)
-		data = append(data, url)
+		str := fmt.Sprintf("%v/%v/%v", v.MType, v.ID, data)
+		res = append(res, str)
 	}
-	return data
+	return res
 }

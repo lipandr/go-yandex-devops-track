@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  agent:
+    build:
+      #context: ./cmd/agent
+      dockerfile: ./cmd/agent/agent.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  server:
+    build:
+      #context: ./cmd/server
+      dockerfile: ./cmd/server/server.dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    deploy:
+      mode: replicated
+      replicas: 1
