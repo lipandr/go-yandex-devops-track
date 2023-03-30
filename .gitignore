@@ -12,10 +12,8 @@
 *.out
 
 # Binaries
-cmd/agent/main
-cmd/agent/agent
-cmd/server/main
-cmd/server/server
+agentAPP
+serverAPP
 
 # Dependency directories (remove the comment below to include it)
 vendor/

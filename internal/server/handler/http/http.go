@@ -5,6 +5,7 @@ import (
 	"errors"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -83,8 +84,9 @@ func (h *Handler) GetMetricValue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListAllMetrics(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("listAllMetrics.html")
+	tmpl, err := template.ParseFiles("./app/listAllMetrics.html")
 	if err != nil {
+		log.Printf("error parsing template: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
